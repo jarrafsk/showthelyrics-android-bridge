@@ -10,6 +10,7 @@ import android.os.Looper;
 import android.service.notification.NotificationListenerService;
 import android.content.ComponentName;
 import android.util.Base64;
+import android.util.Log;
 
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
@@ -24,7 +25,7 @@ public final class MediaNotificationListener extends NotificationListenerService
     private volatile MediaController selected;
     private final Runnable poller = new Runnable() {
         @Override public void run() {
-            try { updateActiveSession(); sendCurrent(); } catch (Exception ignored) { closeSocket(); }
+            try { updateActiveSession(); sendCurrent(); } catch (Exception e) { Log.e("LyricsBridge", "Poll error", e); closeSocket(); }
             handler.postDelayed(this, 1000);
         }
     };
@@ -50,6 +51,7 @@ public final class MediaNotificationListener extends NotificationListenerService
     private void updateActiveSession() {
         MediaSessionManager manager = (MediaSessionManager) getSystemService(MEDIA_SESSION_SERVICE);
         List<MediaController> sessions = manager.getActiveSessions(new ComponentName(this, MediaNotificationListener.class));
+        Log.i("LyricsBridge", "Active media sessions: " + (sessions == null ? "null" : sessions.size()));
         MediaController best = null;
         if (sessions != null) {
             for (MediaController c : sessions) {
@@ -59,6 +61,7 @@ public final class MediaNotificationListener extends NotificationListenerService
             }
         }
         selected = best;
+        Log.i("LyricsBridge", "Selected media: " + (best == null ? "none" : best.getPackageName()));
     }
 
     private void sendCurrent() throws Exception {
@@ -72,6 +75,7 @@ public final class MediaNotificationListener extends NotificationListenerService
         if (title == null) title = "";
         if (artist == null) artist = "";
         if (album == null) album = "";
+        Log.i("LyricsBridge", "MEDIA: title=" + title + " | artist=" + artist + " | album=" + album);
         long duration = m.getLong(MediaMetadata.METADATA_KEY_DURATION);
         long position = p == null ? 0 : Math.max(0, p.getPosition());
         boolean playing = p != null && p.getState() == PlaybackState.STATE_PLAYING;
@@ -92,8 +96,8 @@ public final class MediaNotificationListener extends NotificationListenerService
             s.connect(new InetSocketAddress("127.0.0.1", 39871), 500);
             s.setTcpNoDelay(true);
             socket = s;
-            output = s.getOutputStream();
-        } catch (Exception ignored) { closeSocket(); }
+            output = s.getOutputStream(); Log.i("LyricsBridge", "BRIDGE CONNECTED: 127.0.0.1:39871");
+        } catch (Exception e) { Log.e("LyricsBridge", "Bridge connection failed", e); closeSocket(); }
     }
 
     private synchronized void closeSocket() {
