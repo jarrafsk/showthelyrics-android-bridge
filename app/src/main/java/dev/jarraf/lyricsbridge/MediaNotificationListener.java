@@ -1,6 +1,7 @@
 package dev.jarraf.lyricsbridge;
 
 import android.media.MediaMetadata;
+import android.media.session.MediaSessionManager;
 import android.media.session.MediaController;
 import android.media.session.MediaSession;
 import android.media.session.PlaybackState;
@@ -47,7 +48,8 @@ public final class MediaNotificationListener extends NotificationListenerService
     }
 
     private void updateActiveSession() {
-        List<MediaController> sessions = getActiveSessions(new ComponentName(this, MediaNotificationListener.class));
+        MediaSessionManager manager = (MediaSessionManager) getSystemService(MEDIA_SESSION_SERVICE);
+        List<MediaController> sessions = manager.getActiveSessions(new ComponentName(this, MediaNotificationListener.class));
         MediaController best = null;
         if (sessions != null) {
             for (MediaController c : sessions) {
