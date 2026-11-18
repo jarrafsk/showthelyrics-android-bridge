@@ -32,6 +32,7 @@ public final class MediaNotificationListener extends NotificationListenerService
 
     @Override public void onListenerConnected() {
         super.onListenerConnected();
+        Log.i("LyricsBridge", "LISTENER CONNECTED: callback fired");
         handler.removeCallbacks(poller);
         handler.post(poller);
     }
