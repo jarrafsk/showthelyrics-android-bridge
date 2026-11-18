@@ -17,15 +17,26 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public final class MediaNotificationListener extends NotificationListenerService {
     private final Handler handler = new Handler(Looper.getMainLooper());
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private volatile Socket socket;
     private volatile OutputStream output;
     private volatile MediaController selected;
     private final Runnable poller = new Runnable() {
         @Override public void run() {
-            try { updateActiveSession(); sendCurrent(); } catch (Exception e) { Log.e("LyricsBridge", "Poll error", e); closeSocket(); }
+            executor.execute(() -> {
+                try {
+                    updateActiveSession();
+                    sendCurrent();
+                } catch (Exception e) {
+                    Log.e("LyricsBridge", "Poll error", e);
+                    closeSocket();
+                }
+            });
             handler.postDelayed(this, 1000);
         }
     };
